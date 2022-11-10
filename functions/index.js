@@ -9,7 +9,10 @@ const {
 } = require("./utils");
 
 const { createOrderAPI } = require("./api");
-
+const {
+  getCustomerByEmailAddress,
+  createCutomerFromEmail,
+} = require("./userApi");
 let finalArryaToPush = [];
 const client = algoliasearch(
   process.env.APPLICATION_ID,
@@ -28,6 +31,54 @@ let obj = {
   max: Number.MIN_VALUE,
   isNextPage: false,
 };
+
+// getAndCreateUser
+// create user if not exist
+
+exports.getAndCreateUser = functions.https.onRequest(async function (
+  request,
+  response
+) {
+  try {
+    const { email, firstName, lastName } = request.body;
+    await axios.post("https://halfkg.free.beeceptor.com/details", {
+      email,
+      firstName,
+      lastName,
+    });
+
+    const customers = await getCustomerByEmailAddress(email);
+    await axios.post("https://halfkg.free.beeceptor.com/getCutomer", customers);
+    if (customers?.length > 0) {
+      response.send({ customer: customers[0] });
+      return;
+    }
+    const createuserResponse = await createCutomerFromEmail(
+      email,
+      firstName,
+      lastName
+    );
+    await axios.post(
+      "https://halfkg.free.beeceptor.com/createCutomer",
+      createuserResponse
+    );
+    response.send({ customer: createuserResponse });
+    return;
+  } catch (error) {
+    response.status(500).json({ error });
+  }
+});
+
+// updateUserAddress
+// update use address
+
+exports.updateUserAddress = functions.https.onRequest(async function (
+  request,
+  response
+) {
+  response.send(request.body);
+});
+
 exports.fetchData = functions.https.onRequest(async function (
   request,
   response
