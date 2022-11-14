@@ -42,40 +42,12 @@ exports.getAndCreateUser = functions.https.onRequest(async function (
   try {
     const { email, firstName, lastName } = request.body;
     const customers = await getCustomerByEmailAddress(email);
-    response.send(
-      "api called---Fetch Data Sccessfully--43-" + customers?.length + email
-    );
+    if (customers?.length > 0) return response.send({ customer: customers[0] });
+    const createuserResponse = await createCutomerFromEmail(email, firstName, lastName);
+    return response.send({ customer: createuserResponse });
   } catch (error) {
-    response.send("api called---Fetch Data UNSccessfully--2-");
+    return response.status(500).json({ error })
   }
-
-  // try {
-  //   // const { email, firstName, lastName } = request.body;
-  //   // await axios.post("https://halfkg.free.beeceptor.com/email", {
-  //   //   data: request?.body?.email || "NULL",
-  //   // });
-
-  //   response.send("api called---Fetch Data Sccessfully---");
-
-  //   // const customers = await getCustomerByEmailAddress(email);
-  //   // await axios.post("https://halfkg.free.beeceptor.com/getCutomer", customers);
-  //   // if (customers?.length > 0) {
-  //   //   response.send({ customer: customers[0] });
-  //   //   return;
-  //   // }
-  //   // const createuserResponse = await createCutomerFromEmail(
-  //   //   email,
-  //   //   firstName,
-  //   //   lastName
-  //   // );
-  //   // await axios.post(
-  //   //   "https://halfkg.free.beeceptor.com/createCutomer",
-  //   //   createuserResponse.data
-  //   // );
-  //   // response.send({ customer: createuserResponse.data });
-  // } catch (error) {
-  //   response.status(500).json({ error });
-  // }
 });
 
 // updateUserAddress

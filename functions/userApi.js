@@ -1,22 +1,17 @@
 const axios = require("axios");
 
 const getCustomerByEmailAddress = async (email) => {
-  await axios.post("https://halfkg.free.beeceptor.com/email", { email });
   const url = `https://halfkg.myshopify.com/admin/api/2022-10/customers/search.json?fields=id,+email,+addresses,+first_name,+last_name,+phone&query=email:${email}`;
   const result = await axios.get(url, {
     headers: {
-      "X-Shopify-Access-Token": process.env.X_SHOPIFY_ACCESS_TOKEN,
+      "X-Shopify-Access-Token": "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",
     },
   });
-  await axios.post("https://halfkg.free.beeceptor.com/result1", {
-    result: result.data,
-  });
-
-  return result?.data?.result?.customers || [];
+  return result?.data?.customers;
 };
 
 const createCutomerFromEmail = async (email, firstName, lastName) => {
-  return await axios.post(
+  const response = await axios.post(
     `https://halfkg.myshopify.com/admin/api/2022-10/customers.json`,
     {
       customer: {
@@ -28,10 +23,11 @@ const createCutomerFromEmail = async (email, firstName, lastName) => {
     },
     {
       headers: {
-        "X-Shopify-Access-Token": process.env.X_SHOPIFY_ACCESS_TOKEN,
+        "X-Shopify-Access-Token": "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",
       },
     }
   );
+  return response?.data?.customer
 };
 
 module.exports = {
