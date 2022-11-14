@@ -13,6 +13,7 @@ const {
   getCustomerByEmailAddress,
   createCutomerFromEmail,
 } = require("./userApi");
+const { updateUserAddress } = require("./userController");
 let finalArryaToPush = [];
 const client = algoliasearch(
   process.env.APPLICATION_ID,
@@ -53,11 +54,17 @@ exports.getAndCreateUser = functions.https.onRequest(async function (
 // updateUserAddress
 // update use address
 
-exports.updateUserAddress = functions.https.onRequest(async function (
+exports.createAndUpdateUserAddress = functions.https.onRequest(async function (
   request,
   response
 ) {
-  response.send(request.body);
+  try {
+    const { userId, address = {} } = request.body
+    const addressToRetuen = await updateUserAddress(userId, address)
+    response.json({ address: addressToRetuen })
+  } catch (error) {
+    response.status(500).json({ error })
+  }
 });
 
 exports.fetchData = functions.https.onRequest(async function (

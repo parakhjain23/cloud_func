@@ -30,7 +30,35 @@ const createCutomerFromEmail = async (email, firstName, lastName) => {
   return response?.data?.customer
 };
 
+
+
+const retirveAllAddressOfUser = async (userId) => {
+  return (await axios.get(`https://halfkg.myshopify.com/admin/api/2022-10/customers/${userId}/addresses.json?limit=1`, shopifyAdminHeader))?.data?.addresses || [];
+}
+
+const createDefaultAddressOfUser = async (userId, address) => {
+  return (await axios.post(
+    `https://halfkg.myshopify.com/admin/api/2022-10/customers/${userId}/addresses.json`,
+    { address },
+    shopifyAdminHeader
+
+  )).data.customer_address
+}
+
+const editDefaultAddress = async (userId, addressId, address) => {
+  return (await axios.put(
+    `https://halfkg.myshopify.com/admin/api/2022-10/customers/${userId}/addresses/${addressId}.json`,
+    { address },
+    shopifyAdminHeader
+
+  )).data.customer_address
+}
+
+
 module.exports = {
   getCustomerByEmailAddress,
   createCutomerFromEmail,
+  retirveAllAddressOfUser,
+  createDefaultAddressOfUser,
+  editDefaultAddress
 };
