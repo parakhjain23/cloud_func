@@ -1,12 +1,14 @@
 const axios = require("axios");
 
+const shopifyAdminHeader = {
+  headers: {
+    "X-Shopify-Access-Token": "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",
+  },
+}
+
 const getCustomerByEmailAddress = async (email) => {
   const url = `https://halfkg.myshopify.com/admin/api/2022-10/customers/search.json?fields=id,+email,+addresses,+first_name,+last_name,+phone&query=email:${email}`;
-  const result = await axios.get(url, {
-    headers: {
-      "X-Shopify-Access-Token": "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",
-    },
-  });
+  const result = await axios.get(url, shopifyAdminHeader);
   return result?.data?.customers;
 };
 
@@ -21,11 +23,7 @@ const createCutomerFromEmail = async (email, firstName, lastName) => {
         verified_email: true,
       },
     },
-    {
-      headers: {
-        "X-Shopify-Access-Token": "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",
-      },
-    }
+    shopifyAdminHeader
   );
   return response?.data?.customer
 };

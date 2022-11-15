@@ -1,7 +1,9 @@
+const { default: axios } = require("axios");
 const { retirveAllAddressOfUser, createDefaultAddressOfUser, editDefaultAddress } = require("./userApi");
 
 async function updateUserAddress(userId, addressPayload = {}) {
-    if (addressPayload.id === undefined || addressPayload.id === '' || addressPayload.id === null) {
+
+    if (addressPayload?.id === undefined || addressPayload?.id === '' || addressPayload?.id === null) {
         //retrive all address of user by user id
         var addressToReturn = {}
         const userAddresses = await retirveAllAddressOfUser(userId)
