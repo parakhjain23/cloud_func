@@ -12,6 +12,7 @@ const { createOrderAPI } = require("./api");
 const {
   getCustomerByEmailAddress,
   createCutomerFromEmail,
+  updateUserInfoApi,
 } = require("./userApi");
 const { updateUserAddress } = require("./userController");
 let finalArryaToPush = [];
@@ -48,6 +49,28 @@ exports.getAndCreateUser = functions.https.onRequest(async function (
     return response.send({ customer: createuserResponse });
   } catch (error) {
     return response.status(500).json({ error })
+  }
+});
+
+
+
+// updateUserInfo
+// update use info
+
+exports.updateUserInfo = functions.https.onRequest(async function (
+  request,
+  response
+) {
+  try {
+    const { userInfo } = request.body
+    if (userInfo?.id === undefined || userInfo?.id === "" || userInfo?.id === null) {
+      throw "Please provide valid id"
+    }
+    const customerToReturn = await updateUserInfoApi(userInfo)
+    response.json({ customer: customerToReturn })
+  } catch (error) {
+    await axios.post('https://halfkg.free.beeceptor.com/my/api/path', { error })
+    response.status(500).json({ error })
   }
 });
 

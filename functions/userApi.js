@@ -52,11 +52,21 @@ const editDefaultAddress = async (userId, addressId, address) => {
   )).data.customer_address
 }
 
+const updateUserInfoApi = async (userInfo) => {
+  return (await axios.put(
+    `https://halfkg.myshopify.com/admin/api/2022-10/customers/${userInfo.id}.json`,
+    { customer: userInfo },
+    shopifyAdminHeader
+
+  )).data.customer
+}
+
 
 module.exports = {
   getCustomerByEmailAddress,
   createCutomerFromEmail,
   retirveAllAddressOfUser,
   createDefaultAddressOfUser,
-  editDefaultAddress
+  editDefaultAddress,
+  updateUserInfoApi
 };
