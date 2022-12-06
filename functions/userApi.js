@@ -1,8 +1,9 @@
-const axios = require("axios");
+const axios = require("axios")
+import {X_Shopify_Access_Token} from "@env";
 
 const shopifyAdminHeader = {
   headers: {
-    "X-Shopify-Access-Token": "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",
+    "X-Shopify-Access-Token": X_Shopify_Access_Token,
   },
 }
 
