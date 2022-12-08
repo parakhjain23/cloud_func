@@ -3,7 +3,7 @@ require("dotenv").config();
 
 const shopifyAdminHeader = {
   headers: {
-    "X-Shopify-Access-Token": process.env.SHOPIFY_ACCESS_TOKEN,
+    "X-Shopify-Access-Token": process.env.X_SHOPIFY_ACCESS_TOKEN,
   },
 }
 

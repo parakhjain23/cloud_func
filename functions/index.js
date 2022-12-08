@@ -90,7 +90,7 @@ exports.createAndUpdateUserAddress = functions.https.onRequest(async function (
   }
 });
 
-exports.fetchData = functions.https.onRequest(async function (
+exports.clearAndFetchData = functions.https.onRequest(async function (
   request,
   response
 ) {
@@ -113,6 +113,8 @@ exports.fetchData = functions.https.onRequest(async function (
           return false;
         })
         .map((prod) => {
+          prod.tags = [prod.tags]
+          prod.tags = prod?.tags[0].split(",")
           if (prod?.variants?.length > 1) {
             prod?.variants?.map((variant) => {
               prod.min = obj.min = Math.min(parseInt(variant.price), obj.min);
@@ -173,6 +175,90 @@ exports.fetchData = functions.https.onRequest(async function (
     structuredData: true,
   });
   response.send("api called---Fetch Data Sccessfully---");
+});
+
+exports.shopifyToAlgolia = functions.pubsub.schedule('0 */4 * * *').onRun(async (context) => {
+  while (!obj.isNextPage) {
+    const result = await axios.get(obj.link, {
+      headers: {
+        "X-Shopify-Access-Token": process.env.X_SHOPIFY_ACCESS_TOKEN,
+      },
+    });
+    let arr = result.headers.link.split(",");
+    obj.isNextPage = arr.length == 1 && arr[0].includes("previous");
+    obj.link = result.headers.link.replace(/[<>]/g, "");
+
+    try {
+      var arr1 = result?.data?.products
+        ?.filter((prod) => {
+          if (prod.status == "active") {
+            return true;
+          }
+          return false;
+        })
+        .map((prod) => {
+          prod.tags = [prod.tags]
+          prod.tags = prod?.tags[0].split(",")
+          if (prod?.variants?.length > 1) {
+            prod?.variants?.map((variant) => {
+              prod.min = obj.min = Math.min(parseInt(variant.price), obj.min);
+              prod.max = obj.max = Math.max(parseInt(variant.price), obj.max);
+              return prod;
+            });
+            obj.min = Number.MAX_VALUE;
+            obj.max = Number.MIN_VALUE;
+          }
+          prod?.variants?.map((vari) => {
+            if (prod?.images?.length > 0) {
+              for (let i = 0; i < prod?.images?.length; i++) {
+                if (
+                  vari.image_id != null &&
+                  prod?.images[i]?.id == vari.image_id
+                ) {
+                  vari.image = prod?.images[i]?.src;
+                  break;
+                } else {
+                  vari.image = "";
+                }
+              }
+              if (vari.image == "") {
+                if (prod?.image != null) {
+                  vari.image = prod?.image?.src;
+                } else {
+                  vari.image = null;
+                }
+              }
+            } else if (prod?.image != null && prod?.image?.src != null) {
+              vari.image = prod?.image?.src;
+            } else {
+              vari.image = null;
+            }
+          });
+          prod.objectID = prod.id;
+          return prod;
+        });
+      finalArryaToPush.push(...arr1);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+  // clear all data from algolia
+  // index.clearObjects();
+
+  // // upload all data to algolia
+  index
+    .saveObjects(finalArryaToPush)
+    .then(({ objectIDs }) => {
+      console.log();
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+
+  // functions.logger.info("api calling succcccccfullllllllllllllllll!", {
+  //   structuredData: true,
+  // });
+  // response.send("api called---Fetch Data Sccessfully---");
 });
 
 // CreateOrder Funtion
