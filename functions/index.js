@@ -90,6 +90,7 @@ exports.createAndUpdateUserAddress = functions.https.onRequest(async function (
   }
 });
 
+//clear algolia index then add data to algolia
 exports.clearAndFetchData = functions.https.onRequest(async function (
   request,
   response
@@ -178,6 +179,8 @@ exports.clearAndFetchData = functions.https.onRequest(async function (
 });
 
 exports.shopifyToAlgolia = functions.pubsub.schedule('0 */4 * * *').onRun(async (context) => {
+  const date = new Date()
+  const hour = date.getHours()
   while (!obj.isNextPage) {
     const result = await axios.get(obj.link, {
       headers: {
@@ -197,8 +200,10 @@ exports.shopifyToAlgolia = functions.pubsub.schedule('0 */4 * * *').onRun(async 
           return false;
         })
         .map((prod) => {
+          prod.updatedAtHour = hour
           prod.tags = [prod.tags]
           prod.tags = prod?.tags[0].split(",")
+
           if (prod?.variants?.length > 1) {
             prod?.variants?.map((variant) => {
               prod.min = obj.min = Math.min(parseInt(variant.price), obj.min);
@@ -245,7 +250,7 @@ exports.shopifyToAlgolia = functions.pubsub.schedule('0 */4 * * *').onRun(async 
   // clear all data from algolia
   // index.clearObjects();
 
-  // // upload all data to algolia
+  // upload all data to algolia
   index
     .saveObjects(finalArryaToPush)
     .then(({ objectIDs }) => {
@@ -254,7 +259,14 @@ exports.shopifyToAlgolia = functions.pubsub.schedule('0 */4 * * *').onRun(async 
     .catch((error) => {
       console.log(error);
     });
-
+  
+    index.deleteBy({
+      numericFilters: [
+        `updatedAtHour != ${hour}`
+      ]
+    }).then(() => {
+      console.log()
+    });
   // functions.logger.info("api calling succcccccfullllllllllllllllll!", {
   //   structuredData: true,
   // });
