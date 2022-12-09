@@ -179,8 +179,7 @@ exports.clearAndFetchData = functions.https.onRequest(async function (
 });
 
 exports.shopifyToAlgolia = functions.pubsub.schedule('0 */4 * * *').onRun(async (context) => {
-  const date = new Date()
-  const hour = date.getHours()
+  const current_time = Math.round((new Date()).getTime() / 1000)
   while (!obj.isNextPage) {
     const result = await axios.get(obj.link, {
       headers: {
@@ -200,7 +199,7 @@ exports.shopifyToAlgolia = functions.pubsub.schedule('0 */4 * * *').onRun(async 
           return false;
         })
         .map((prod) => {
-          prod.updatedAtHour = hour
+          prod.updatedAtHour = current_time
           prod.tags = [prod.tags]
           prod.tags = prod?.tags[0].split(",")
 
@@ -247,8 +246,6 @@ exports.shopifyToAlgolia = functions.pubsub.schedule('0 */4 * * *').onRun(async 
       console.log(error);
     }
   }
-  // clear all data from algolia
-  // index.clearObjects();
 
   // upload all data to algolia
   index
@@ -262,7 +259,7 @@ exports.shopifyToAlgolia = functions.pubsub.schedule('0 */4 * * *').onRun(async 
   
     index.deleteBy({
       numericFilters: [
-        `updatedAtHour != ${hour}`
+        `updatedAtHour < ${current_time-1000}`
       ]
     }).then(() => {
       console.log()
