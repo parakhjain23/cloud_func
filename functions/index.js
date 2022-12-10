@@ -248,7 +248,7 @@ exports.shopifyToAlgolia = functions.pubsub.schedule('0 */4 * * *').onRun(async 
   }
 
   // upload all data to algolia
-  index
+  await index
     .saveObjects(finalArryaToPush)
     .then(({ objectIDs }) => {
       console.log();
@@ -257,17 +257,16 @@ exports.shopifyToAlgolia = functions.pubsub.schedule('0 */4 * * *').onRun(async 
       console.log(error);
     });
   
-    index.deleteBy({
+  await index.deleteBy({
       numericFilters: [
         `updatedAtHour < ${current_time-1000}`
       ]
     }).then(() => {
       console.log()
-    });
-  // functions.logger.info("api calling succcccccfullllllllllllllllll!", {
-  //   structuredData: true,
-  // });
-  // response.send("api called---Fetch Data Sccessfully---");
+    })
+    .catch((error)=>{
+      console.log(error);
+    })
 });
 
 // CreateOrder Funtion
