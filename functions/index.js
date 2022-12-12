@@ -31,6 +31,7 @@ let obj = {
   link: "https://halfkg.myshopify.com/admin/api/2022-10/products.json?limit=250",
   min: Number.MAX_VALUE,
   max: Number.MIN_VALUE,
+  total_quantity: 0,
   isNextPage: false,
 };
 
@@ -116,6 +117,7 @@ exports.clearAndFetchData = functions.https.onRequest(async function (
         .map((prod) => {
           prod.tags = [prod.tags]
           prod.tags = prod?.tags[0].split(",")
+          prod?.tags.push(prod?.vendor)
           if (prod?.variants?.length > 1) {
             prod?.variants?.map((variant) => {
               prod.min = obj.min = Math.min(parseInt(variant.price), obj.min);
@@ -199,10 +201,14 @@ exports.shopifyToAlgolia = functions.pubsub.schedule('0 */4 * * *').onRun(async 
           return false;
         })
         .map((prod) => {
+          obj.total_quantity=0
+          //time of update
           prod.updatedAtHour = current_time
+          //tags array of collection and brandName(vendor)
           prod.tags = [prod.tags]
           prod.tags = prod?.tags[0].split(",")
-
+          prod?.tags.push(prod?.vendor)
+          
           if (prod?.variants?.length > 1) {
             prod?.variants?.map((variant) => {
               prod.min = obj.min = Math.min(parseInt(variant.price), obj.min);
@@ -213,6 +219,7 @@ exports.shopifyToAlgolia = functions.pubsub.schedule('0 */4 * * *').onRun(async 
             obj.max = Number.MIN_VALUE;
           }
           prod?.variants?.map((vari) => {
+            obj.total_quantity = obj.total_quantity + vari?.inventory_quantity
             if (prod?.images?.length > 0) {
               for (let i = 0; i < prod?.images?.length; i++) {
                 if (
@@ -238,6 +245,8 @@ exports.shopifyToAlgolia = functions.pubsub.schedule('0 */4 * * *').onRun(async 
               vari.image = null;
             }
           });
+          //total quantity of all variants
+          prod.total_quantity = obj.total_quantity
           prod.objectID = prod.id;
           return prod;
         });
