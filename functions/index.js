@@ -8,7 +8,7 @@ const {
   createOrderPayLoadForHomeDilevery,
 } = require("./utils");
 
-const { createOrderAPI, createOrderForPayment } = require("./api");
+const { createOrderAPI} = require("./api");
 const {
   getCustomerByEmailAddress,
   createCutomerFromEmail,
@@ -22,11 +22,6 @@ const client = algoliasearch(
 );
 const index = client.initIndex("ShopifyProduct");
 
-// exports.helloWorld = functions.https.onRequest((request, response) => {
-//   functions.logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
-
 let obj = {
   link: "https://halfkg.myshopify.com/admin/api/2022-10/products.json?limit=250",
   min: Number.MAX_VALUE,
@@ -37,7 +32,6 @@ let obj = {
 
 // getAndCreateUser
 // create user if not exist
-
 exports.getAndCreateUser = functions.https.onRequest(async function (
   request,
   response
@@ -53,11 +47,8 @@ exports.getAndCreateUser = functions.https.onRequest(async function (
   }
 });
 
-
-
 // updateUserInfo
 // update use info
-
 exports.updateUserInfo = functions.https.onRequest(async function (
   request,
   response
@@ -77,7 +68,6 @@ exports.updateUserInfo = functions.https.onRequest(async function (
 
 // updateUserAddress
 // update use address
-
 exports.createAndUpdateUserAddress = functions.https.onRequest(async function (
   request,
   response
@@ -307,6 +297,7 @@ exports.createOrder = functions.https.onRequest(async function (
   }
 });
 
+//order creation at the time of razorpay payment
 exports.createOrderForPayment = functions.https.onRequest(async function (
   request,
   response
@@ -317,17 +308,14 @@ exports.createOrderForPayment = functions.https.onRequest(async function (
       "amount": amount,
       "currency": currency
     }
-    await axios.post('https://eo4zs3am9hd2l7r.m.pipedream.net', payload)
     const result = await axios.post('https://api.razorpay.com/v1/orders', payload, {
       headers: {
-        Authorization: 'Basic cnpwX3Rlc3RfVjdlYUx4YlA5V2s1R1Y6S2VRZUlOaWlTMEJRN2VhbWNjWmxlcjM0'
+        Authorization: process.env.RAZOR_PAY_KEY_ID_BASE64
       }
     })
     response.send(result.data);
     return;
   } catch (error) {
-    await axios.post('https://eo4zs3am9hd2l7r.m.pipedream.net', error)
-
     response.status(401).json({ error });
   }
 });
