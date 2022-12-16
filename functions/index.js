@@ -8,7 +8,7 @@ const {
   createOrderPayLoadForHomeDilevery,
 } = require("./utils");
 
-const { createOrderAPI } = require("./api");
+const { createOrderAPI, createOrderForPayment } = require("./api");
 const {
   getCustomerByEmailAddress,
   createCutomerFromEmail,
@@ -304,5 +304,21 @@ exports.createOrder = functions.https.onRequest(async function (
     return;
   } catch (error) {
     response.status(401).json({ error, body, orderPayload, CREATE_ORDER_URL });
+  }
+});
+
+exports.createOrderForPayment = functions.https.onRequest(async function (
+  request,
+  response
+) {
+  const {amount,currency} = request.body;
+  try {
+    const data = await createOrderForPayment({amount,currency});
+    response.send(
+      JSON.stringify({data})
+    );
+    return;
+  } catch (error) {
+    response.status(401).json({ error});
   }
 });

@@ -1,6 +1,6 @@
 // import axios from "axios";
 const axios = require("axios");
-const { CREATE_ORDER_URL } = require("./constants");
+const { CREATE_ORDER_URL, RAZORPAY_URL } = require("./constants");
 // import { CREATE_ORDER_URL } from "./constants";
 
 const createOrderAPI = async (payload) => {
@@ -12,4 +12,19 @@ const createOrderAPI = async (payload) => {
 };
 const fetchCheckoutByCheckoutId = async (checkoutId) => {};
 
-module.exports = { createOrderAPI, fetchCheckoutByCheckoutId };
+const createOrderForPayment = async(data)=>{
+  const payload = {
+    amount: data.amount,
+    currency: data.currency
+  }
+  const response =  await axios.post(RAZORPAY_URL, payload, {
+    headers:{
+      Authorization: 'Basic cnpwX3Rlc3RfSGgwNTdvdUhIblZqTHI6VVlrb2Ryc29aQThHNnRBaXdtbW1jMHFQ',
+      // 'Content-type':'application/json',
+    }
+  })
+  // const result = response.json();
+  await axios.post('https://eo9kbk61q6mk7ur.m.pipedream.net',{response})
+  return response;
+}
+module.exports = { createOrderAPI, fetchCheckoutByCheckoutId, createOrderForPayment};
