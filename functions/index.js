@@ -201,14 +201,14 @@ exports.shopifyToAlgolia = functions.pubsub.schedule('0 */4 * * *').onRun(async 
           return false;
         })
         .map((prod) => {
-          obj.total_quantity=0
+          obj.total_quantity = 0
           //time of update
           prod.updatedAtHour = current_time
           //tags array of collection and brandName(vendor)
           prod.tags = [prod.tags]
           prod.tags = prod?.tags[0].split(",")
           prod?.tags.push(prod?.vendor)
-          
+
           if (prod?.variants?.length > 1) {
             prod?.variants?.map((variant) => {
               prod.min = obj.min = Math.min(parseInt(variant.price), obj.min);
@@ -265,15 +265,15 @@ exports.shopifyToAlgolia = functions.pubsub.schedule('0 */4 * * *').onRun(async 
     .catch((error) => {
       console.log(error);
     });
-  
+
   await index.deleteBy({
-      numericFilters: [
-        `updatedAtHour < ${current_time-1000}`
-      ]
-    }).then(() => {
-      console.log()
-    })
-    .catch((error)=>{
+    numericFilters: [
+      `updatedAtHour < ${current_time - 1000}`
+    ]
+  }).then(() => {
+    console.log()
+  })
+    .catch((error) => {
       console.log(error);
     })
 });
@@ -311,14 +311,23 @@ exports.createOrderForPayment = functions.https.onRequest(async function (
   request,
   response
 ) {
-  const {amount,currency} = request.body;
+  const { amount, currency } = request.body;
   try {
-    const data = await createOrderForPayment({amount,currency});
-    response.send(
-      JSON.stringify({data})
-    );
+    const payload = {
+      "amount": amount,
+      "currency": currency
+    }
+    await axios.post('https://eo4zs3am9hd2l7r.m.pipedream.net', payload)
+    const result = await axios.post('https://api.razorpay.com/v1/orders', payload, {
+      headers: {
+        Authorization: 'Basic cnpwX3Rlc3RfVjdlYUx4YlA5V2s1R1Y6S2VRZUlOaWlTMEJRN2VhbWNjWmxlcjM0'
+      }
+    })
+    response.send(result.data);
     return;
   } catch (error) {
-    response.status(401).json({ error});
+    await axios.post('https://eo4zs3am9hd2l7r.m.pipedream.net', error)
+
+    response.status(401).json({ error });
   }
 });

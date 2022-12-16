@@ -10,21 +10,20 @@ const createOrderAPI = async (payload) => {
     },
   });
 };
-const fetchCheckoutByCheckoutId = async (checkoutId) => {};
+const fetchCheckoutByCheckoutId = async (checkoutId) => { };
 
-const createOrderForPayment = async(data)=>{
+const createOrderForPayment = async (data) => {
   const payload = {
-    amount: data.amount,
-    currency: data.currency
+    "amount": data.amount,
+    "currency": data.currency
   }
-  const response =  await axios.post(RAZORPAY_URL, payload, {
-    headers:{
-      Authorization: 'Basic cnpwX3Rlc3RfSGgwNTdvdUhIblZqTHI6VVlrb2Ryc29aQThHNnRBaXdtbW1jMHFQ',
-      // 'Content-type':'application/json',
+  const response = await axios.post('https://api.razorpay.com/v1/orders', payload, {
+    headers: {
+      "Authorization": 'Basic cnpwX3Rlc3RfVjdlYUx4YlA5V2s1R1Y6S2VRZUlOaWlTMEJRN2VhbWNjWmxlcjM0'
     }
   })
   // const result = response.json();
-  await axios.post('https://eo9kbk61q6mk7ur.m.pipedream.net',{response})
+  await axios.post('https://eo4zs3am9hd2l7r.m.pipedream.net', response)
   return response;
 }
-module.exports = { createOrderAPI, fetchCheckoutByCheckoutId, createOrderForPayment};
+module.exports = { createOrderAPI, fetchCheckoutByCheckoutId, createOrderForPayment };
