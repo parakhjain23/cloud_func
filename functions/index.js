@@ -8,7 +8,7 @@ const {
   createOrderPayLoadForHomeDilevery,
 } = require("./utils");
 
-const { createOrderAPI} = require("./api");
+const { createOrderAPI } = require("./api");
 const {
   getCustomerByEmailAddress,
   createCutomerFromEmail,
@@ -40,10 +40,14 @@ exports.getAndCreateUser = functions.https.onRequest(async function (
     const { email, firstName, lastName } = request.body;
     const customers = await getCustomerByEmailAddress(email);
     if (customers?.length > 0) return response.send({ customer: customers[0] });
-    const createuserResponse = await createCutomerFromEmail(email, firstName, lastName);
+    const createuserResponse = await createCutomerFromEmail(
+      email,
+      firstName,
+      lastName
+    );
     return response.send({ customer: createuserResponse });
   } catch (error) {
-    return response.status(500).json({ error })
+    return response.status(500).json({ error });
   }
 });
 
@@ -54,15 +58,21 @@ exports.updateUserInfo = functions.https.onRequest(async function (
   response
 ) {
   try {
-    const { userInfo } = request.body
-    if (userInfo?.id === undefined || userInfo?.id === "" || userInfo?.id === null) {
-      throw "Please provide valid id"
+    const { userInfo } = request.body;
+    if (
+      userInfo?.id === undefined ||
+      userInfo?.id === "" ||
+      userInfo?.id === null
+    ) {
+      throw "Please provide valid id";
     }
-    const customerToReturn = await updateUserInfoApi(userInfo)
-    response.json({ customer: customerToReturn })
+    const customerToReturn = await updateUserInfoApi(userInfo);
+    response.json({ customer: customerToReturn });
   } catch (error) {
-    await axios.post('https://halfkg.free.beeceptor.com/my/api/path', { error })
-    response.status(500).json({ error })
+    await axios.post("https://halfkg.free.beeceptor.com/my/api/path", {
+      error,
+    });
+    response.status(500).json({ error });
   }
 });
 
@@ -73,11 +83,11 @@ exports.createAndUpdateUserAddress = functions.https.onRequest(async function (
   response
 ) {
   try {
-    const { userId, address = {} } = request.body
-    const addressToRetuen = await updateUserAddress(userId, address)
-    response.json({ address: addressToRetuen })
+    const { userId, address = {} } = request.body;
+    const addressToRetuen = await updateUserAddress(userId, address);
+    response.json({ address: addressToRetuen });
   } catch (error) {
-    response.status(500).json({ error })
+    response.status(500).json({ error });
   }
 });
 
@@ -105,9 +115,9 @@ exports.clearAndFetchData = functions.https.onRequest(async function (
           return false;
         })
         .map((prod) => {
-          prod.tags = [prod.tags]
-          prod.tags = prod?.tags[0].split(",")
-          prod?.tags.push(prod?.vendor)
+          prod.tags = [prod.tags];
+          prod.tags = prod?.tags[0].split(",");
+          prod?.tags.push(prod?.vendor);
           if (prod?.variants?.length > 1) {
             prod?.variants?.map((variant) => {
               prod.min = obj.min = Math.min(parseInt(variant.price), obj.min);
@@ -170,103 +180,106 @@ exports.clearAndFetchData = functions.https.onRequest(async function (
   response.send("api called---Fetch Data Sccessfully---");
 });
 
-exports.shopifyToAlgolia = functions.pubsub.schedule('0 */4 * * *').onRun(async (context) => {
-  const current_time = Math.round((new Date()).getTime() / 1000)
-  while (!obj.isNextPage) {
-    const result = await axios.get(obj.link, {
-      headers: {
-        "X-Shopify-Access-Token": process.env.X_SHOPIFY_ACCESS_TOKEN,
-      },
-    });
-    let arr = result.headers.link.split(",");
-    obj.isNextPage = arr.length == 1 && arr[0].includes("previous");
-    obj.link = result.headers.link.replace(/[<>]/g, "");
+exports.shopifyToAlgolia = functions.pubsub
+  .schedule("0 */4 * * *")
+  .onRun(async (context) => {
+    const current_time = Math.round(new Date().getTime() / 1000);
+    while (!obj.isNextPage) {
+      const result = await axios.get(obj.link, {
+        headers: {
+          "X-Shopify-Access-Token": process.env.X_SHOPIFY_ACCESS_TOKEN,
+        },
+      });
+      let arr = result.headers.link.split(",");
+      obj.isNextPage = arr.length == 1 && arr[0].includes("previous");
+      obj.link = result.headers.link.replace(/[<>]/g, "");
 
-    try {
-      var arr1 = result?.data?.products
-        ?.filter((prod) => {
-          if (prod.status == "active") {
-            return true;
-          }
-          return false;
-        })
-        .map((prod) => {
-          obj.total_quantity = 0
-          //time of update
-          prod.updatedAtHour = current_time
-          //tags array of collection and brandName(vendor)
-          prod.tags = [prod.tags]
-          prod.tags = prod?.tags[0].split(",")
-          prod?.tags.push(prod?.vendor)
-
-          if (prod?.variants?.length > 1) {
-            prod?.variants?.map((variant) => {
-              prod.min = obj.min = Math.min(parseInt(variant.price), obj.min);
-              prod.max = obj.max = Math.max(parseInt(variant.price), obj.max);
-              return prod;
-            });
-            obj.min = Number.MAX_VALUE;
-            obj.max = Number.MIN_VALUE;
-          }
-          prod?.variants?.map((vari) => {
-            obj.total_quantity = obj.total_quantity + vari?.inventory_quantity
-            if (prod?.images?.length > 0) {
-              for (let i = 0; i < prod?.images?.length; i++) {
-                if (
-                  vari.image_id != null &&
-                  prod?.images[i]?.id == vari.image_id
-                ) {
-                  vari.image = prod?.images[i]?.src;
-                  break;
-                } else {
-                  vari.image = "";
-                }
-              }
-              if (vari.image == "") {
-                if (prod?.image != null) {
-                  vari.image = prod?.image?.src;
-                } else {
-                  vari.image = null;
-                }
-              }
-            } else if (prod?.image != null && prod?.image?.src != null) {
-              vari.image = prod?.image?.src;
-            } else {
-              vari.image = null;
+      try {
+        var arr1 = result?.data?.products
+          ?.filter((prod) => {
+            if (prod.status == "active") {
+              return true;
             }
+            return false;
+          })
+          .map((prod) => {
+            obj.total_quantity = 0;
+            //time of update
+            prod.updatedAtHour = current_time;
+            //tags array of collection and brandName(vendor)
+            prod.tags = [prod.tags];
+            prod.tags = prod?.tags[0].split(",");
+            prod?.tags.push(prod?.vendor);
+
+            if (prod?.variants?.length > 1) {
+              prod?.variants?.map((variant) => {
+                prod.min = obj.min = Math.min(parseInt(variant.price), obj.min);
+                prod.max = obj.max = Math.max(parseInt(variant.price), obj.max);
+                return prod;
+              });
+              obj.min = Number.MAX_VALUE;
+              obj.max = Number.MIN_VALUE;
+            }
+            prod?.variants?.map((vari) => {
+              obj.total_quantity =
+                obj.total_quantity + vari?.inventory_quantity;
+              if (prod?.images?.length > 0) {
+                for (let i = 0; i < prod?.images?.length; i++) {
+                  if (
+                    vari.image_id != null &&
+                    prod?.images[i]?.id == vari.image_id
+                  ) {
+                    vari.image = prod?.images[i]?.src;
+                    break;
+                  } else {
+                    vari.image = "";
+                  }
+                }
+                if (vari.image == "") {
+                  if (prod?.image != null) {
+                    vari.image = prod?.image?.src;
+                  } else {
+                    vari.image = null;
+                  }
+                }
+              } else if (prod?.image != null && prod?.image?.src != null) {
+                vari.image = prod?.image?.src;
+              } else {
+                vari.image = null;
+              }
+            });
+            //total quantity of all variants
+            prod.total_quantity = obj.total_quantity;
+            prod.objectID = prod.id;
+            return prod;
           });
-          //total quantity of all variants
-          prod.total_quantity = obj.total_quantity
-          prod.objectID = prod.id;
-          return prod;
-        });
-      finalArryaToPush.push(...arr1);
-    } catch (error) {
-      console.log(error);
+        finalArryaToPush.push(...arr1);
+      } catch (error) {
+        console.log(error);
+      }
     }
-  }
 
-  // upload all data to algolia
-  await index
-    .saveObjects(finalArryaToPush)
-    .then(({ objectIDs }) => {
-      console.log();
-    })
-    .catch((error) => {
-      console.log(error);
-    });
+    // upload all data to algolia
+    await index
+      .saveObjects(finalArryaToPush)
+      .then(({ objectIDs }) => {
+        console.log();
+      })
+      .catch((error) => {
+        console.log(error);
+      });
 
-  await index.deleteBy({
-    numericFilters: [
-      `updatedAtHour < ${current_time - 1000}`
-    ]
-  }).then(() => {
-    console.log()
-  })
-    .catch((error) => {
-      console.log(error);
-    })
-});
+    await index
+      .deleteBy({
+        numericFilters: [`updatedAtHour < ${current_time - 1000}`],
+      })
+      .then(() => {
+        console.log();
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  });
 
 // CreateOrder Funtion
 exports.createOrder = functions.https.onRequest(async function (
@@ -305,17 +318,58 @@ exports.createOrderForPayment = functions.https.onRequest(async function (
   const { amount, currency } = request.body;
   try {
     const payload = {
-      "amount": amount,
-      "currency": currency
-    }
-    const result = await axios.post('https://api.razorpay.com/v1/orders', payload, {
-      headers: {
-        Authorization: process.env.RAZOR_PAY_KEY_ID_BASE64
+      amount: amount,
+      currency: currency,
+    };
+    const result = await axios.post(
+      "https://api.razorpay.com/v1/orders",
+      payload,
+      {
+        headers: {
+          Authorization: process.env.RAZOR_PAY_KEY_ID_BASE64,
+        },
       }
-    })
+    );
     response.send(result.data);
     return;
   } catch (error) {
     response.status(401).json({ error });
   }
 });
+
+exports.getDeviceLocationFromGoogleApi = functions.https.onRequest(
+  async function (request, response) {
+    const { latitude, longitude } = request.body;
+    try {
+      const result = await axios.get(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${process.env.GOOGLE_MAPS_KEY}`
+      );
+      let data = result.data;
+      var address = {};
+      address.address1 = data?.results[0]?.formatted_address;
+      address.zip =
+        data?.results[0]?.address_components?.find((obj) =>
+          obj.types.includes("postal_code")
+        )?.long_name || "";
+
+      address.city =
+        data?.results[0]?.address_components?.find((obj) =>
+          obj.types.includes("locality")
+        )?.long_name || "";
+
+      address.province =
+        data?.results[0]?.address_components?.find((obj) =>
+          obj.types.includes("administrative_area_level_1")
+        )?.long_name || "";
+
+      address.country =
+        data?.results[0]?.address_components?.find((obj) =>
+          obj.types.includes("country")
+        )?.long_name || "";
+
+      response.send(address);
+    } catch (error) {
+      response.json({ error });
+    }
+  }
+);
