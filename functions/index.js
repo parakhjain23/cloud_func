@@ -58,7 +58,7 @@ exports.updateUserInfo = functions.https.onRequest(async function (
   response
 ) {
   try {
-    const { userInfo } = request.body;
+    const {userInfo} = request.body;
     if (
       userInfo?.id === undefined ||
       userInfo?.id === "" ||
@@ -67,11 +67,8 @@ exports.updateUserInfo = functions.https.onRequest(async function (
       throw "Please provide valid id";
     }
     const customerToReturn = await updateUserInfoApi(userInfo);
-    response.json({ customer: customerToReturn });
+    response.send({ customer: customerToReturn });
   } catch (error) {
-    await axios.post("https://halfkg.free.beeceptor.com/my/api/path", {
-      error,
-    });
     response.status(500).json({ error });
   }
 });
