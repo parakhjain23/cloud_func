@@ -58,7 +58,7 @@ exports.updateUserInfo = functions.https.onRequest(async function (
   response
 ) {
   try {
-    const {userInfo} = request.body;
+    const { userInfo } = request.body;
     if (
       userInfo?.id === undefined ||
       userInfo?.id === "" ||
@@ -370,3 +370,51 @@ exports.getDeviceLocationFromGoogleApi = functions.https.onRequest(
     }
   }
 );
+
+exports.getAndCreateUserFromMobile = functions.https.onRequest(
+  async (request, response) => {
+    try {
+      const{ MobileNo } = request.body;
+      // await axios.post("https://eo9kbk61q6mk7ur.m.pipedream.net",{'demo':MobileNo});
+      const getCustomerByPhone = await axios.get(`https://halfkg.myshopify.com/admin/api/2022-10/customers/search.json?fields=id,+email,+addresses,+first_name,+last_name,+phone&query=phone:${MobileNo}`,{
+        headers:{
+          "X-Shopify-Access-Token": process.env.X_SHOPIFY_ACCESS_TOKEN,
+            "Content-Type": "application/json"
+        }
+      })
+      // await axios.post("https://eo9kbk61q6mk7ur.m.pipedream.net",getCustomerByPhone?.data)
+      if (getCustomerByPhone?.data?.customers?.length > 0) {
+        response.send(getCustomerByPhone?.data?.customers[0]);
+      }
+
+      const result = await axios.post("https://halfkg.myshopify.com/admin/api/2022-10/customers.json",{customer:{
+        phone: MobileNo,
+        verified_email: true
+      }},{
+        headers:{
+          "X-Shopify-Access-Token": process.env.X_SHOPIFY_ACCESS_TOKEN,
+            "Content-Type": "application/json"
+        }
+      })
+      // await axios.post("https://eo9kbk61q6mk7ur.m.pipedream.net",{'new':result?.data})
+      response.send(result?.data?.customer)
+    } catch (error) {
+      console.log(error);
+      response.json({error})
+    }
+  }
+);
+
+exports.verifyMobileNumber = functions.https.onRequest(async(request,response)=>{
+  try {
+    const { Token }=request.body;
+    const result = await axios.post("https://control.msg91.com/api/v5/widget/verifyAccessToken",{"authkey":process.env.MSG91_AUTH_KEY,"access-token":Token},{
+      headers:{
+        'Content-Type':'application/json'
+      }
+    })
+    response.send(result?.data);
+  } catch (error) {
+    response.json({error})
+  }
+});
