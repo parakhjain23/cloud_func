@@ -422,18 +422,17 @@ exports.verifyMobileNumber = functions.https.onRequest(async(request,response)=>
 exports.getDraftOrderData = functions.https.onRequest(async(request,response)=>{
   try {
     const {latestDraftOrderId} = request.body;
-    await axios.post("https://eo4m6r2avsfon5s.m.pipedream.net",latestDraftOrderId)
-    const result = await axios.get(`https://halfkg.myshopify.com/admin/api/2022-10/draft_orders/${latestDraftOrderId}.json?fields=shipping_address,+billing_address,+id,+status,+total_tax,+total_price`,
+    const url = `https://halfkg.myshopify.com/admin/api/2022-10/draft_orders/${latestDraftOrderId}.json?fields=shipping_address,+billing_address,+id,+status,+total_tax,+total_price,+line_items,+created_at`
+    // await axios.post("https://eo4m6r2avsfon5s.m.pipedream.net",url)
+    const result = await axios.get(url,
     {
       headers:{
         "X-Shopify-Access-Token": process.env.X_SHOPIFY_ACCESS_TOKEN,
         "Content-Type":"application/json"
       }
     })
-    const data = await result.json()
-    await axios.post("https://eo4m6r2avsfon5s.m.pipedream.net",result)
-    await axios.post("https://eo4m6r2avsfon5s.m.pipedream.net",data)
-    response.send(result);
+    // await axios.post("https://eo4m6r2avsfon5s.m.pipedream.net",result?.data)
+    response.send(result?.data);
   } catch (error) {
     response.json({error})
   }
