@@ -438,18 +438,18 @@ exports.getDraftOrderData = functions.https.onRequest(async(request,response)=>{
   }
 });
 
-exports.createDraftOrder = functions.https.onRequest(
-  async(request,response)=>{
+exports.createDraftOrder = functions.https.onRequest(async(request,response)=>{
     try {
-      const {payload} = request.body;
-      await axios.post("https://eo4m6r2avsfon5s.m.pipedream.net",{payload})
-      const result = axios.post('https://halfkg.myshopify.com/admin/api/2022-10/draft_orders.json',payload,{
+      const draft_order = request.body;
+      // await axios.post('https://eo4m6r2avsfon5s.m.pipedream.net',draft_order)
+      const result = await axios.post('https://halfkg.myshopify.com/admin/api/2022-10/draft_orders.json',draft_order,{
         headers:{
-          "X-Shopify-Access-Token": process.env.X_SHOPIFY_ACCESS_TOKEN
+          "X-Shopify-Access-Token": process.env.X_SHOPIFY_ACCESS_TOKEN,
+          "Content-Type":"application/json"
         }
       })
-      await axios.post("https://eo4m6r2avsfon5s.m.pipedream.net",result?.data)
-      response.send(result?.data)
+      // await axios.post("https://eo4m6r2avsfon5s.m.pipedream.net",result?.data)
+      response.send(result?.data);
     } catch (error) {
       response.json({error})
     }
