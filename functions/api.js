@@ -1,15 +1,14 @@
-// import axios from "axios";
+require("dotenv").config();
 const axios = require("axios");
-const { CREATE_ORDER_URL } = require("./constants");
-// import { CREATE_ORDER_URL } from "./constants";
+const { CREATE_ORDER_URL, RAZORPAY_URL } = require("./constants");
 
 const createOrderAPI = async (payload) => {
   return await axios.post(CREATE_ORDER_URL, payload, {
     headers: {
-      "X-Shopify-Access-Token": "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",
+      "X-Shopify-Access-Token": process.env.X_SHOPIFY_ACCESS_TOKEN,
     },
   });
 };
-const fetchCheckoutByCheckoutId = async (checkoutId) => {};
+const fetchCheckoutByCheckoutId = async (checkoutId) => { };
 
 module.exports = { createOrderAPI, fetchCheckoutByCheckoutId };

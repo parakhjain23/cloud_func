@@ -49,7 +49,6 @@ const editDefaultAddress = async (userId, addressId, address) => {
     `https://halfkg.myshopify.com/admin/api/2022-10/customers/${userId}/addresses/${addressId}.json`,
     { address },
     shopifyAdminHeader
-
   )).data.customer_address
 }
 
@@ -58,7 +57,6 @@ const updateUserInfoApi = async (userInfo) => {
     `https://halfkg.myshopify.com/admin/api/2022-10/customers/${userInfo.id}.json`,
     { customer: userInfo },
     shopifyAdminHeader
-
   )).data.customer
 }
 

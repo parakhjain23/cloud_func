@@ -51,7 +51,6 @@ let obj = {
 
 // getAndCreateUser
 // create user if not exist
-
 exports.getAndCreateUser = functions.https.onRequest(async function (
   request,
   response
@@ -73,7 +72,6 @@ exports.getAndCreateUser = functions.https.onRequest(async function (
 
 // updateUserInfo
 // update use info
-
 exports.updateUserInfo = functions.https.onRequest(async function (
   request,
   response
@@ -88,18 +86,14 @@ exports.updateUserInfo = functions.https.onRequest(async function (
       throw "Please provide valid id";
     }
     const customerToReturn = await updateUserInfoApi(userInfo);
-    response.json({ customer: customerToReturn });
+    response.send({ customer: customerToReturn });
   } catch (error) {
-    await axios.post("https://halfkg.free.beeceptor.com/my/api/path", {
-      error,
-    });
     response.status(500).json({ error });
   }
 });
 
 // updateUserAddress
 // update use address
-
 exports.createAndUpdateUserAddress = functions.https.onRequest(async function (
   request,
   response
@@ -350,25 +344,194 @@ exports.createOrder = functions.https.onRequest(async function (
   }
 });
 
-exports.test = functions.https.onRequest(async function (request, response) {
+//order creation at the time of razorpay payment
+exports.createOrderForPayment = functions.https.onRequest(async function (
+  request,
+  response
+) {
   const { amount, currency } = request.body;
   try {
-    const data = await axios.post(
+    const payload = {
+      amount: amount,
+      currency: currency,
+    };
+    const result = await axios.post(
       "https://api.razorpay.com/v1/orders",
-      { amount: amount, currency: currency },
+      payload,
       {
-        Headers: {
-          "Content-Type": "application/json",
-          Authorization: "CN8HJAGUStxl82Dh3QMWhnht",
+        headers: {
+          Authorization: process.env.RAZOR_PAY_KEY_ID_BASE64,
         },
       }
     );
-    // await axios.post("https://eo9kbk61q6mk7ur.m.pipedream.net", {
-    //   response: response.data,
-    // });
-    response.send(response.data);
+    response.send(result.data);
     return;
   } catch (error) {
-    response.status(401).json({});
+    response.status(401).json({ error });
   }
 });
+
+exports.getDeviceLocationFromGoogleApi = functions.https.onRequest(
+  async function (request, response) {
+    const { latitude, longitude } = request.body;
+    try {
+      const result = await axios.get(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${process.env.GOOGLE_MAPS_KEY}`
+      );
+      let data = result.data;
+      var address = {};
+      address.address1 = data?.results[0]?.formatted_address;
+      address.zip =
+        data?.results[0]?.address_components?.find((obj) =>
+          obj.types.includes("postal_code")
+        )?.long_name || "";
+
+      address.city =
+        data?.results[0]?.address_components?.find((obj) =>
+          obj.types.includes("locality")
+        )?.long_name || "";
+
+      address.province =
+        data?.results[0]?.address_components?.find((obj) =>
+          obj.types.includes("administrative_area_level_1")
+        )?.long_name || "";
+
+      address.country =
+        data?.results[0]?.address_components?.find((obj) =>
+          obj.types.includes("country")
+        )?.long_name || "";
+
+      response.send(address);
+    } catch (error) {
+      response.json({ error });
+    }
+  }
+);
+
+exports.getAndCreateUserFromMobile = functions.https.onRequest(
+  async (request, response) => {
+    try {
+      const { MobileNo } = request.body;
+      // await axios.post("https://eo9kbk61q6mk7ur.m.pipedream.net",{'demo':MobileNo});
+      const getCustomerByPhone = await axios.get(
+        `https://halfkg.myshopify.com/admin/api/2022-10/customers/search.json?fields=id,+email,+addresses,+first_name,+last_name,+phone&query=phone:${MobileNo}`,
+        {
+          headers: {
+            "X-Shopify-Access-Token": process.env.X_SHOPIFY_ACCESS_TOKEN,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      // await axios.post("https://eo9kbk61q6mk7ur.m.pipedream.net",getCustomerByPhone?.data)
+      if (getCustomerByPhone?.data?.customers?.length > 0) {
+        response.send(getCustomerByPhone?.data?.customers[0]);
+      }
+
+      const result = await axios.post(
+        "https://halfkg.myshopify.com/admin/api/2022-10/customers.json",
+        {
+          customer: {
+            phone: MobileNo,
+            verified_email: true,
+          },
+        },
+        {
+          headers: {
+            "X-Shopify-Access-Token": process.env.X_SHOPIFY_ACCESS_TOKEN,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      // await axios.post("https://eo9kbk61q6mk7ur.m.pipedream.net",{'new':result?.data})
+      response.send(result?.data?.customer);
+    } catch (error) {
+      console.log(error);
+      response.json({ error });
+    }
+  }
+);
+
+exports.verifyMobileNumber = functions.https.onRequest(
+  async (request, response) => {
+    try {
+      const { Token } = request.body;
+      const result = await axios.post(
+        "https://control.msg91.com/api/v5/widget/verifyAccessToken",
+        { authkey: process.env.MSG91_AUTH_KEY, "access-token": Token },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      response.send(result?.data);
+    } catch (error) {
+      response.json({ error });
+    }
+  }
+);
+
+exports.getDraftOrderData = functions.https.onRequest(
+  async (request, response) => {
+    try {
+      const { latestDraftOrderId } = request.body;
+      const url = `https://halfkg.myshopify.com/admin/api/2022-10/draft_orders/${latestDraftOrderId}.json?fields=shipping_address,+billing_address,+id,+status,+total_tax,+total_price,+line_items,+created_at`;
+      // await axios.post("https://eo4m6r2avsfon5s.m.pipedream.net",url)
+      const result = await axios.get(url, {
+        headers: {
+          "X-Shopify-Access-Token": process.env.X_SHOPIFY_ACCESS_TOKEN,
+          "Content-Type": "application/json",
+        },
+      });
+      // await axios.post("https://eo4m6r2avsfon5s.m.pipedream.net",result?.data)
+      response.send(result?.data);
+    } catch (error) {
+      response.json({ error });
+    }
+  }
+);
+
+exports.createDraftOrder = functions.https.onRequest(
+  async (request, response) => {
+    try {
+      const draft_order = request.body;
+      // await axios.post('https://eo4m6r2avsfon5s.m.pipedream.net',draft_order)
+      const result = await axios.post(
+        "https://halfkg.myshopify.com/admin/api/2022-10/draft_orders.json",
+        draft_order,
+        {
+          headers: {
+            "X-Shopify-Access-Token": process.env.X_SHOPIFY_ACCESS_TOKEN,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      // await axios.post("https://eo4m6r2avsfon5s.m.pipedream.net",result?.data)
+      response.send(result?.data);
+    } catch (error) {
+      response.json({ error });
+    }
+  }
+);
+
+exports.completeDraftOrder = functions.https.onRequest(
+  async (request, response) => {
+    try {
+      const { draftOrderId } = request.body;
+      const URL = `https://halfkg.myshopify.com/admin/api/2022-10/draft_orders/${draftOrderId}/complete.json`;
+      var result = await axios.put(
+        URL,
+        { draftOrderId },
+        {
+          headers: {
+            "X-Shopify-Access-Token": process.env.X_SHOPIFY_ACCESS_TOKEN,
+          },
+        }
+      );
+      response.send(result?.data);
+    } catch (error) {
+      console.log(error);
+      response.json({ error });
+    }
+  }
+);
