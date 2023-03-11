@@ -16,23 +16,37 @@ const {
 } = require("./userApi");
 const { updateUserAddress } = require("./userController");
 let finalArryaToPush = [];
+let finalObjectToPush = {};
+
 const client = algoliasearch(
   process.env.APPLICATION_ID,
   process.env.WRITE_API_KEY
 );
-const index = client.initIndex("ShopifyProduct");
+const index = client.initIndex("AirtableProduct");
 
 // exports.helloWorld = functions.https.onRequest((request, response) => {
 //   functions.logger.info("Hello logs!", {structuredData: true});
 //   response.send("Hello from Firebase!");
 // });
 
+// let obj = {
+//   link: "https://halfkg.myshopify.com/admin/api/2022-10/products.json?limit=250",
+//   min: Number.MAX_VALUE,
+//   max: Number.MIN_VALUE,
+//   total_quantity: 0,
+//   isNextPage: false,
+// };
+
 let obj = {
-  link: "https://halfkg.myshopify.com/admin/api/2022-10/products.json?limit=250",
-  min: Number.MAX_VALUE,
-  max: Number.MIN_VALUE,
-  total_quantity: 0,
-  isNextPage: false,
+  sortedLink: `https://api.airtable.com/v0/appttPmFTvYcBaktb/Variants?pageSize=100&${encodeURI(
+    "fields[]=Product&fields[]=MRP&fields[]=Quantity&fields[]=Product copy&fields[]=Variant Label&fields[]=Halfkg_Price&fields[]=Images&fields[]=Total amount&fields[]=Weight&fields[]=Weight Unit&fields[]=Total amount&fields[]=variant count&fields[]=Product_Id&fields[]=Vendor&fields[]=min&fields[]=max&fields[]=status&fields[]=body_html&fields[]=product_type&fields[]=tags"
+  )}`,
+  link: `https://api.airtable.com/v0/appttPmFTvYcBaktb/Variants?pageSize=100&${encodeURI(
+    "fields[]=Product&fields[]=MRP&fields[]=Quantity&fields[]=Product copy&fields[]=Variant Label&fields[]=Halfkg_Price&fields[]=Images&fields[]=Total amount&fields[]=Weight&fields[]=Weight Unit&fields[]=Total amount&fields[]=variant count&fields[]=Product_Id&fields[]=Vendor&fields[]=min&fields[]=max&fields[]=status&fields[]=body_html&fields[]=product_type&fields[]=tags"
+  )}`,
+  pageSize: 100,
+  offset: null,
+  isNextPage: true,
 };
 
 // getAndCreateUser
@@ -46,14 +60,16 @@ exports.getAndCreateUser = functions.https.onRequest(async function (
     const { email, firstName, lastName } = request.body;
     const customers = await getCustomerByEmailAddress(email);
     if (customers?.length > 0) return response.send({ customer: customers[0] });
-    const createuserResponse = await createCutomerFromEmail(email, firstName, lastName);
+    const createuserResponse = await createCutomerFromEmail(
+      email,
+      firstName,
+      lastName
+    );
     return response.send({ customer: createuserResponse });
   } catch (error) {
-    return response.status(500).json({ error })
+    return response.status(500).json({ error });
   }
 });
-
-
 
 // updateUserInfo
 // update use info
@@ -63,15 +79,21 @@ exports.updateUserInfo = functions.https.onRequest(async function (
   response
 ) {
   try {
-    const { userInfo } = request.body
-    if (userInfo?.id === undefined || userInfo?.id === "" || userInfo?.id === null) {
-      throw "Please provide valid id"
+    const { userInfo } = request.body;
+    if (
+      userInfo?.id === undefined ||
+      userInfo?.id === "" ||
+      userInfo?.id === null
+    ) {
+      throw "Please provide valid id";
     }
-    const customerToReturn = await updateUserInfoApi(userInfo)
-    response.json({ customer: customerToReturn })
+    const customerToReturn = await updateUserInfoApi(userInfo);
+    response.json({ customer: customerToReturn });
   } catch (error) {
-    await axios.post('https://halfkg.free.beeceptor.com/my/api/path', { error })
-    response.status(500).json({ error })
+    await axios.post("https://halfkg.free.beeceptor.com/my/api/path", {
+      error,
+    });
+    response.status(500).json({ error });
   }
 });
 
@@ -83,11 +105,11 @@ exports.createAndUpdateUserAddress = functions.https.onRequest(async function (
   response
 ) {
   try {
-    const { userId, address = {} } = request.body
-    const addressToRetuen = await updateUserAddress(userId, address)
-    response.json({ address: addressToRetuen })
+    const { userId, address = {} } = request.body;
+    const addressToRetuen = await updateUserAddress(userId, address);
+    response.json({ address: addressToRetuen });
   } catch (error) {
-    response.status(500).json({ error })
+    response.status(500).json({ error });
   }
 });
 
@@ -96,77 +118,95 @@ exports.clearAndFetchData = functions.https.onRequest(async function (
   request,
   response
 ) {
-  while (!obj.isNextPage) {
+  while (obj.isNextPage) {
     const result = await axios.get(obj.link, {
       headers: {
-        "X-Shopify-Access-Token": process.env.X_SHOPIFY_ACCESS_TOKEN,
+        Authorization: process.env.AIRTABLE_KEY,
       },
     });
-    let arr = result.headers.link.split(",");
-    obj.isNextPage = arr.length == 1 && arr[0].includes("previous");
-    obj.link = result.headers.link.replace(/[<>]/g, "");
-
-    try {
-      var arr1 = result?.data?.products
-        ?.filter((prod) => {
-          if (prod.status == "active") {
-            return true;
-          }
-          return false;
-        })
-        .map((prod) => {
-          prod.tags = [prod.tags]
-          prod.tags = prod?.tags[0].split(",")
-          prod?.tags.push(prod?.vendor)
-          if (prod?.variants?.length > 1) {
-            prod?.variants?.map((variant) => {
-              prod.min = obj.min = Math.min(parseInt(variant.price), obj.min);
-              prod.max = obj.max = Math.max(parseInt(variant.price), obj.max);
-              return prod;
-            });
-            obj.min = Number.MAX_VALUE;
-            obj.max = Number.MIN_VALUE;
-          }
-          prod?.variants?.map((vari) => {
-            if (prod?.images?.length > 0) {
-              for (let i = 0; i < prod?.images?.length; i++) {
-                if (
-                  vari.image_id != null &&
-                  prod?.images[i]?.id == vari.image_id
-                ) {
-                  vari.image = prod?.images[i]?.src;
-                  break;
-                } else {
-                  vari.image = "";
-                }
-              }
-              if (vari.image == "") {
-                if (prod?.image != null) {
-                  vari.image = prod?.image?.src;
-                } else {
-                  vari.image = null;
-                }
-              }
-            } else if (prod?.image != null && prod?.image?.src != null) {
-              vari.image = prod?.image?.src;
-            } else {
-              vari.image = null;
-            }
-          });
-          prod.objectID = prod.id;
-          return prod;
-        });
-      finalArryaToPush.push(...arr1);
-    } catch (error) {
-      console.log(error);
+    obj.offset = result?.data?.offset;
+    if (obj.offset == undefined) {
+      obj.isNextPage = false;
+      break;
     }
+    obj.link = `${obj.sortedLink}&offset=${obj.offset}`;
+    result?.data?.records?.map((item) => {
+      if (item?.fields["status"] != "draft") {
+        if (finalObjectToPush[item?.fields["Product_Id"]] != undefined) {
+          finalObjectToPush[item?.fields["Product_Id"]]["variants"]?.push({
+            id: item?.id,
+            ...item?.fields,
+            Quantity:
+              item?.fields["Quantity"] && item?.fields["Quantity"] > 0
+                ? item?.fields["Quantity"]
+                : 0,
+            URL: item?.fields["URL"] ? item?.fields["URL"] : null,
+          });
+        } else {
+          finalObjectToPush[item?.fields?.Product_Id] = {};
+          finalObjectToPush[item?.fields?.Product_Id]["id"] =
+            item?.fields["Product_Id"];
+          finalObjectToPush[item?.fields?.Product_Id]["title"] =
+            item?.fields["Product copy"];
+          finalObjectToPush[item?.fields?.Product_Id]["body_html"] =
+            item?.fields["body_html"] && item?.fields["body_html"] !== undefined
+              ? item?.fields["body_html"]
+              : null;
+          finalObjectToPush[item?.fields?.Product_Id]["vendor"] =
+            item?.fields["Vendor"] && item?.fields["Vendor"] !== undefined
+              ? item?.fields["Vendor"]
+              : null;
+          finalObjectToPush[item?.fields?.Product_Id]["product_type"] =
+            item?.fields["product_type"] &&
+            item?.fields["product_type"] !== undefined
+              ? item?.fields["product_type"]
+              : null;
+          finalObjectToPush[item?.fields?.Product_Id]["tags"] =
+            item?.fields["tags"] && item?.fields["tags"] !== undefined
+              ? item?.fields["tags"]
+              : null;
+          finalObjectToPush[item?.fields?.Product_Id]["variants"] = [
+            {
+              id: item?.id,
+              ...item?.fields,
+              Quantity:
+                item?.fields["Quantity"] && item?.fields["Quantity"] > 0
+                  ? item?.fields["Quantity"]
+                  : 0,
+              URL: item?.fields["URL"] ? item?.fields["URL"] : null,
+            },
+          ];
+          finalObjectToPush[item?.fields?.Product_Id]["total_quantity"] =
+            item?.fields["Quantity"] && item?.fields["Quantity"] > 0
+              ? item?.fields["Quantity"]
+              : 0;
+          finalObjectToPush[item?.fields?.Product_Id]["min"] =
+            item?.fields["min"] && item?.fields["min"] !== undefined
+              ? item?.fields["min"]
+              : null;
+          finalObjectToPush[item?.fields?.Product_Id]["max"] =
+            item?.fields["max"] && item?.fields["max"] !== undefined
+              ? item?.fields["max"]
+              : null;
+          finalObjectToPush[item?.fields?.Product_Id]["status"] =
+            item?.fields["status"] && item?.fields["status"] !== undefined
+              ? item?.fields["status"]
+              : null;
+          // finalObjectToPush[item?.fields?.Product_Id]['image']=item?.fields['Images (from Product)']
+        }
+      }
+    });
   }
-  // clear all data from algolia
-  index.clearObjects();
+  const objectsToSave = Object.entries(finalObjectToPush).map(
+    ([objectID, objectData]) => {
+      return { objectID, ...objectData };
+    }
+  );
 
-  // // upload all data to algolia
-  index
-    .saveObjects(finalArryaToPush)
+  // clear all data from algolia
+  await index.clearObjects();
+  await index
+    .saveObjects(objectsToSave)
     .then(({ objectIDs }) => {
       console.log();
     })
@@ -180,103 +220,106 @@ exports.clearAndFetchData = functions.https.onRequest(async function (
   response.send("api called---Fetch Data Sccessfully---");
 });
 
-exports.shopifyToAlgolia = functions.pubsub.schedule('0 */4 * * *').onRun(async (context) => {
-  const current_time = Math.round((new Date()).getTime() / 1000)
-  while (!obj.isNextPage) {
-    const result = await axios.get(obj.link, {
-      headers: {
-        "X-Shopify-Access-Token": process.env.X_SHOPIFY_ACCESS_TOKEN,
-      },
-    });
-    let arr = result.headers.link.split(",");
-    obj.isNextPage = arr.length == 1 && arr[0].includes("previous");
-    obj.link = result.headers.link.replace(/[<>]/g, "");
+exports.shopifyToAlgolia = functions.pubsub
+  .schedule("0 */4 * * *")
+  .onRun(async (context) => {
+    const current_time = Math.round(new Date().getTime() / 1000);
+    while (!obj.isNextPage) {
+      const result = await axios.get(obj.link, {
+        headers: {
+          "X-Shopify-Access-Token": process.env.X_SHOPIFY_ACCESS_TOKEN,
+        },
+      });
+      let arr = result.headers.link.split(",");
+      obj.isNextPage = arr.length == 1 && arr[0].includes("previous");
+      obj.link = result.headers.link.replace(/[<>]/g, "");
 
-    try {
-      var arr1 = result?.data?.products
-        ?.filter((prod) => {
-          if (prod.status == "active") {
-            return true;
-          }
-          return false;
-        })
-        .map((prod) => {
-          obj.total_quantity=0
-          //time of update
-          prod.updatedAtHour = current_time
-          //tags array of collection and brandName(vendor)
-          prod.tags = [prod.tags]
-          prod.tags = prod?.tags[0].split(",")
-          prod?.tags.push(prod?.vendor)
-          
-          if (prod?.variants?.length > 1) {
-            prod?.variants?.map((variant) => {
-              prod.min = obj.min = Math.min(parseInt(variant.price), obj.min);
-              prod.max = obj.max = Math.max(parseInt(variant.price), obj.max);
-              return prod;
-            });
-            obj.min = Number.MAX_VALUE;
-            obj.max = Number.MIN_VALUE;
-          }
-          prod?.variants?.map((vari) => {
-            obj.total_quantity = obj.total_quantity + vari?.inventory_quantity
-            if (prod?.images?.length > 0) {
-              for (let i = 0; i < prod?.images?.length; i++) {
-                if (
-                  vari.image_id != null &&
-                  prod?.images[i]?.id == vari.image_id
-                ) {
-                  vari.image = prod?.images[i]?.src;
-                  break;
-                } else {
-                  vari.image = "";
-                }
-              }
-              if (vari.image == "") {
-                if (prod?.image != null) {
-                  vari.image = prod?.image?.src;
-                } else {
-                  vari.image = null;
-                }
-              }
-            } else if (prod?.image != null && prod?.image?.src != null) {
-              vari.image = prod?.image?.src;
-            } else {
-              vari.image = null;
+      try {
+        var arr1 = result?.data?.products
+          ?.filter((prod) => {
+            if (prod.status == "active") {
+              return true;
             }
-          });
-          //total quantity of all variants
-          prod.total_quantity = obj.total_quantity
-          prod.objectID = prod.id;
-          return prod;
-        });
-      finalArryaToPush.push(...arr1);
-    } catch (error) {
-      console.log(error);
-    }
-  }
+            return false;
+          })
+          .map((prod) => {
+            obj.total_quantity = 0;
+            //time of update
+            prod.updatedAtHour = current_time;
+            //tags array of collection and brandName(vendor)
+            prod.tags = [prod.tags];
+            prod.tags = prod?.tags[0].split(",");
+            prod?.tags.push(prod?.vendor);
 
-  // upload all data to algolia
-  await index
-    .saveObjects(finalArryaToPush)
-    .then(({ objectIDs }) => {
-      console.log();
-    })
-    .catch((error) => {
-      console.log(error);
-    });
-  
-  await index.deleteBy({
-      numericFilters: [
-        `updatedAtHour < ${current_time-1000}`
-      ]
-    }).then(() => {
-      console.log()
-    })
-    .catch((error)=>{
-      console.log(error);
-    })
-});
+            if (prod?.variants?.length > 1) {
+              prod?.variants?.map((variant) => {
+                prod.min = obj.min = Math.min(parseInt(variant.price), obj.min);
+                prod.max = obj.max = Math.max(parseInt(variant.price), obj.max);
+                return prod;
+              });
+              obj.min = Number.MAX_VALUE;
+              obj.max = Number.MIN_VALUE;
+            }
+            prod?.variants?.map((vari) => {
+              obj.total_quantity =
+                obj.total_quantity + vari?.inventory_quantity;
+              if (prod?.images?.length > 0) {
+                for (let i = 0; i < prod?.images?.length; i++) {
+                  if (
+                    vari.image_id != null &&
+                    prod?.images[i]?.id == vari.image_id
+                  ) {
+                    vari.image = prod?.images[i]?.src;
+                    break;
+                  } else {
+                    vari.image = "";
+                  }
+                }
+                if (vari.image == "") {
+                  if (prod?.image != null) {
+                    vari.image = prod?.image?.src;
+                  } else {
+                    vari.image = null;
+                  }
+                }
+              } else if (prod?.image != null && prod?.image?.src != null) {
+                vari.image = prod?.image?.src;
+              } else {
+                vari.image = null;
+              }
+            });
+            //total quantity of all variants
+            prod.total_quantity = obj.total_quantity;
+            prod.objectID = prod.id;
+            return prod;
+          });
+        finalArryaToPush.push(...arr1);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    // upload all data to algolia
+    await index
+      .saveObjects(finalArryaToPush)
+      .then(({ objectIDs }) => {
+        console.log();
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+
+    await index
+      .deleteBy({
+        numericFilters: [`updatedAtHour < ${current_time - 1000}`],
+      })
+      .then(() => {
+        console.log();
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  });
 
 // CreateOrder Funtion
 exports.createOrder = functions.https.onRequest(async function (
@@ -304,5 +347,28 @@ exports.createOrder = functions.https.onRequest(async function (
     return;
   } catch (error) {
     response.status(401).json({ error, body, orderPayload, CREATE_ORDER_URL });
+  }
+});
+
+exports.test = functions.https.onRequest(async function (request, response) {
+  const { amount, currency } = request.body;
+  try {
+    const data = await axios.post(
+      "https://api.razorpay.com/v1/orders",
+      { amount: amount, currency: currency },
+      {
+        Headers: {
+          "Content-Type": "application/json",
+          Authorization: "CN8HJAGUStxl82Dh3QMWhnht",
+        },
+      }
+    );
+    // await axios.post("https://eo9kbk61q6mk7ur.m.pipedream.net", {
+    //   response: response.data,
+    // });
+    response.send(response.data);
+    return;
+  } catch (error) {
+    response.status(401).json({});
   }
 });
