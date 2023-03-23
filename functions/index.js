@@ -76,10 +76,17 @@ exports.updateOrderStatusToPaid = functions.https.onRequest(async function (
   response
 ) {
   try {
-    const {order,payment,payment_link}= request.body
-    await updateOrderStatusApi(order?.entity?.notes?.orderRecordId)
-    if(order?.entity?.notes?.coupon !=null && order?.entity?.notes?.coupon !=undefined){
-      await markCouponAsUsedApi(order?.entity?.notes?.coupon,order?.entity?.notes?.userInfoState)
+    const { order, payment, payment_link } = request.body;
+    await updateOrderStatusApi(order?.entity?.notes?.orderRecordId);
+    if (
+      order?.entity?.notes?.coupon != null &&
+      order?.entity?.notes?.coupon != undefined
+    ) {
+      await markCouponAsUsedApi(
+        order?.entity?.notes?.couponId,
+        order?.entity?.notes?.userId,
+        order?.entity?.notes?.userCoupons
+      );
     }
   } catch (error) {
     return response.status(500).json({ error });
