@@ -79,8 +79,8 @@ exports.updateOrderStatusToPaid = functions.https.onRequest(async function (
     const { order, payment, payment_link } = request.body;
     await updateOrderStatusApi(order?.entity?.notes?.orderRecordId);
     if (
-      order?.entity?.notes?.coupon != null &&
-      order?.entity?.notes?.coupon != undefined
+      order?.entity?.notes?.couponId != null &&
+      order?.entity?.notes?.couponId != undefined
     ) {
       await markCouponAsUsedApi(
         order?.entity?.notes?.couponId,
