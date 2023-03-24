@@ -82,16 +82,22 @@ exports.updateOrderStatusToPaid = functions.https.onRequest(async function (
       order?.entity?.notes?.couponId != null &&
       order?.entity?.notes?.couponId != undefined
     ) {
-      console.log({
+      const data = {
         couponId: order?.entity?.notes?.couponId,
         userId: order?.entity?.notes?.userId,
         userCoupons: order?.entity?.notes?.userCoupons,
-      });
+      };
+
+      console.log(data);
 
       await markCouponAsUsedApi(
         order?.entity?.notes?.couponId,
         order?.entity?.notes?.userId,
         order?.entity?.notes?.userCoupons
+      );
+      await axios.post(
+        "https://50d3e09830db73f37d6605b7ffd730a2.m.pipedream.net",
+        data
       );
     }
   } catch (error) {
