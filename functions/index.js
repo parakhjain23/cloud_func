@@ -82,6 +82,12 @@ exports.updateOrderStatusToPaid = functions.https.onRequest(async function (
       order?.entity?.notes?.couponId != null &&
       order?.entity?.notes?.couponId != undefined
     ) {
+      console.log({
+        couponId: order?.entity?.notes?.couponId,
+        userId: order?.entity?.notes?.userId,
+        userCoupons: order?.entity?.notes?.userCoupons,
+      });
+
       await markCouponAsUsedApi(
         order?.entity?.notes?.couponId,
         order?.entity?.notes?.userId,
