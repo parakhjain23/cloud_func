@@ -20,6 +20,10 @@ const updateOrderStatusApi = async (orderRecordId) => {
     },
     airtableHeader
   );
+  console.log(
+    "🚀 ~ file: airtableApi.js:23 ~ updateOrderStatusApi ~ response:",
+    response
+  );
   return response;
 };
 
@@ -40,7 +44,10 @@ const markCouponAsUsedApi = async (couponId, userId, userCoupons) => {
     },
     airtableHeader
   );
-  await axios.post("https://eook2qc3bg2tggy.m.pipedream.net", response);
+  console.log(
+    "🚀 ~ file: airtableApi.js:47 ~ markCouponAsUsedApi ~ response:",
+    response
+  );
   return response;
 };
 module.exports = {

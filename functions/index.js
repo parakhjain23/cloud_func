@@ -87,18 +87,20 @@ exports.updateOrderStatusToPaid = functions.https.onRequest(async function (
         userId: order?.entity?.notes?.userId,
         userCoupons: order?.entity?.notes?.userCoupons,
       };
+      console.log("🚀 ~ file: index.js:90 ~ data:", data);
 
-      console.log(data);
-
-      await markCouponAsUsedApi(
-        order?.entity?.notes?.couponId,
-        order?.entity?.notes?.userId,
-        order?.entity?.notes?.userCoupons
-      );
-      await axios.post(
-        "https://50d3e09830db73f37d6605b7ffd730a2.m.pipedream.net",
-        data
-      );
+      // console.log(data);
+      if (order?.entity?.notes?.couponId != null) {
+        await markCouponAsUsedApi(
+          order?.entity?.notes?.couponId,
+          order?.entity?.notes?.userId,
+          order?.entity?.notes?.userCoupons
+        );
+        // await axios.post(
+        //   "https://50d3e09830db73f37d6605b7ffd730a2.m.pipedream.net",
+        //   data
+        // );
+      }
     }
   } catch (error) {
     return response.status(500).json({ error });
