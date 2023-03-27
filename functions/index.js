@@ -75,32 +75,19 @@ exports.updateOrderStatusToPaid = functions.https.onRequest(async function (
   request,
   response
 ) {
+  // await axios.post(
+  //   "https://1e49e7c457289c65a8feda3cc72b8ccb.m.pipedream.net",
+  //   request.body
+  // );
   try {
-    const { order, payment, payment_link } = request.body;
+    const { order, payment, payment_link } = request.body.payload;
     await updateOrderStatusApi(order?.entity?.notes?.orderRecordId);
-    if (
-      order?.entity?.notes?.couponId != null &&
-      order?.entity?.notes?.couponId != undefined
-    ) {
-      const data = {
-        couponId: order?.entity?.notes?.couponId,
-        userId: order?.entity?.notes?.userId,
-        userCoupons: order?.entity?.notes?.userCoupons,
-      };
-      console.log("🚀 ~ file: index.js:90 ~ data:", data);
-
-      // console.log(data);
-      if (order?.entity?.notes?.couponId != null) {
-        await markCouponAsUsedApi(
-          order?.entity?.notes?.couponId,
-          order?.entity?.notes?.userId,
-          order?.entity?.notes?.userCoupons
-        );
-        // await axios.post(
-        //   "https://50d3e09830db73f37d6605b7ffd730a2.m.pipedream.net",
-        //   data
-        // );
-      }
+    if (order?.entity?.notes?.couponId != null) {
+      await markCouponAsUsedApi(
+        order?.entity?.notes?.couponId,
+        order?.entity?.notes?.userCoupons,
+        order?.entity?.notes?.userId
+      );
     }
   } catch (error) {
     return response.status(500).json({ error });

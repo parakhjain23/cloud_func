@@ -20,16 +20,23 @@ const updateOrderStatusApi = async (orderRecordId) => {
     },
     airtableHeader
   );
-  console.log(
-    "🚀 ~ file: airtableApi.js:23 ~ updateOrderStatusApi ~ response:",
-    response
-  );
+  // await axios.post(
+  //   "https://1e49e7c457289c65a8feda3cc72b8ccb.m.pipedream.net",
+  //   response
+  // );
   return response;
 };
 
-const markCouponAsUsedApi = async (couponId, userId, userCoupons) => {
-  // var tempArray = userInfo?.user?.Coupons ? userInfo?.user?.Coupons : [];
-  var newCoupons = [...userCoupons, couponId];
+const markCouponAsUsedApi = async (couponId, userCoupons, userId) => {
+  // await axios.post("https://1e49e7c457289c65a8feda3cc72b8ccb.m.pipedream.net", {
+  //   message: "inside coupon function",
+  // });
+  const properCoupon = JSON.parse(userCoupons);
+  var newCoupons = [...properCoupon, couponId];
+  // await axios.post(
+  //   "https://1e49e7c457289c65a8feda3cc72b8ccb.m.pipedream.net",
+  //   newCoupons
+  // );
   const response = await axios.patch(
     `https://api.airtable.com/v0/appttPmFTvYcBaktb/Customers`,
     {
@@ -44,10 +51,10 @@ const markCouponAsUsedApi = async (couponId, userId, userCoupons) => {
     },
     airtableHeader
   );
-  console.log(
-    "🚀 ~ file: airtableApi.js:47 ~ markCouponAsUsedApi ~ response:",
-    response
-  );
+  // await axios.post(
+  //   "https://1e49e7c457289c65a8feda3cc72b8ccb.m.pipedream.net",
+  //   response
+  // );
   return response;
 };
 module.exports = {
