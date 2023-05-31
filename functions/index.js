@@ -40,10 +40,10 @@ const index = client.initIndex("AirtableProduct");
 
 let obj = {
   sortedLink: `https://api.airtable.com/v0/appttPmFTvYcBaktb/Variants?pageSize=100&${encodeURI(
-    "fields[]=Product&fields[]=MRP&fields[]=Quantity&fields[]=Product copy&fields[]=Variant Label&fields[]=Halfkg_Price&fields[]=Images&fields[]=Total amount&fields[]=Weight&fields[]=Weight Unit&fields[]=Total amount&fields[]=variant count&fields[]=Product_Id&fields[]=Vendor&fields[]=min&fields[]=max&fields[]=status&fields[]=body_html&fields[]=product_type&fields[]=tags"
+    "fields[]=Product&fields[]=MRP&fields[]=Quantity&fields[]=Product copy&fields[]=Variant Label&fields[]=Halfkg_Price&fields[]=Images&fields[]=Total amount&fields[]=Weight&fields[]=Weight Unit&fields[]=Total amount&fields[]=variant count&fields[]=Product_Id&fields[]=Vendor&fields[]=min&fields[]=max&fields[]=status&fields[]=body_html&fields[]=product_type&fields[]=tags&fields=BeforeTax"
   )}`,
   link: `https://api.airtable.com/v0/appttPmFTvYcBaktb/Variants?pageSize=100&${encodeURI(
-    "fields[]=Product&fields[]=MRP&fields[]=Quantity&fields[]=Product copy&fields[]=Variant Label&fields[]=Halfkg_Price&fields[]=Images&fields[]=Total amount&fields[]=Weight&fields[]=Weight Unit&fields[]=Total amount&fields[]=variant count&fields[]=Product_Id&fields[]=Vendor&fields[]=min&fields[]=max&fields[]=status&fields[]=body_html&fields[]=product_type&fields[]=tags"
+    "fields[]=Product&fields[]=MRP&fields[]=Quantity&fields[]=Product copy&fields[]=Variant Label&fields[]=Halfkg_Price&fields[]=Images&fields[]=Total amount&fields[]=Weight&fields[]=Weight Unit&fields[]=Total amount&fields[]=variant count&fields[]=Product_Id&fields[]=Vendor&fields[]=min&fields[]=max&fields[]=status&fields[]=body_html&fields[]=product_type&fields[]=tags&fields=BeforeTax"
   )}`,
   pageSize: 100,
   offset: null,
@@ -76,10 +76,16 @@ exports.updateOrderStatusToPaid = functions.https.onRequest(async function (
   response
 ) {
   try {
-    const {order,payment,payment_link}= request.body
-    await updateOrderStatusApi(order?.entity?.notes?.orderRecordId)
-    if(order?.entity?.notes?.coupon !=null && order?.entity?.notes?.coupon !=undefined){
-      await markCouponAsUsedApi(order?.entity?.notes?.coupon,order?.entity?.notes?.userInfoState)
+    const { order, payment, payment_link } = request.body;
+    await updateOrderStatusApi(order?.entity?.notes?.orderRecordId);
+    if (
+      order?.entity?.notes?.coupon != null &&
+      order?.entity?.notes?.coupon != undefined
+    ) {
+      await markCouponAsUsedApi(
+        order?.entity?.notes?.coupon,
+        order?.entity?.notes?.userInfoState
+      );
     }
   } catch (error) {
     return response.status(500).json({ error });
@@ -124,6 +130,111 @@ exports.createAndUpdateUserAddress = functions.https.onRequest(async function (
 });
 
 //clear algolia index then add data to algolia
+
+exports.clearAndFetchDataFromAlgolia = functions.https.onRequest(
+  async function (request, response) {
+    while (obj.isNextPage) {
+      const result = await axios.get(obj.link, {
+        headers: {
+          Authorization: "Bearer keyLqQESyDbpE8JBa",
+        },
+      });
+      obj.offset = result?.data?.offset;
+      if (obj.offset == undefined) {
+        obj.isNextPage = false;
+        break;
+      }
+      obj.link = `${obj.sortedLink}&offset=${obj.offset}`;
+      result?.data?.records?.map((item) => {
+        if (item?.fields["status"] != "draft") {
+          if (finalObjectToPush[item?.fields["Product_Id"]] != undefined) {
+            finalObjectToPush[item?.fields["Product_Id"]]["variants"]?.push({
+              id: item?.id,
+              ...item?.fields,
+              Quantity:
+                item?.fields["Quantity"] && item?.fields["Quantity"] > 0
+                  ? item?.fields["Quantity"]
+                  : 0,
+              URL: item?.fields["URL"] ? item?.fields["URL"] : null,
+            });
+          } else {
+            finalObjectToPush[item?.fields?.Product_Id] = {};
+            finalObjectToPush[item?.fields?.Product_Id]["id"] =
+              item?.fields["Product_Id"];
+            finalObjectToPush[item?.fields?.Product_Id]["title"] =
+              item?.fields["Product copy"];
+            finalObjectToPush[item?.fields?.Product_Id]["body_html"] =
+              item?.fields["body_html"] &&
+              item?.fields["body_html"] !== undefined
+                ? item?.fields["body_html"]
+                : null;
+            finalObjectToPush[item?.fields?.Product_Id]["vendor"] =
+              item?.fields["Vendor"] && item?.fields["Vendor"] !== undefined
+                ? item?.fields["Vendor"]
+                : null;
+            finalObjectToPush[item?.fields?.Product_Id]["product_type"] =
+              item?.fields["product_type"] &&
+              item?.fields["product_type"] !== undefined
+                ? item?.fields["product_type"]
+                : null;
+            finalObjectToPush[item?.fields?.Product_Id]["tags"] =
+              item?.fields["tags"] && item?.fields["tags"] !== undefined
+                ? item?.fields["tags"]
+                : null;
+            finalObjectToPush[item?.fields?.Product_Id]["variants"] = [
+              {
+                id: item?.id,
+                ...item?.fields,
+                Quantity:
+                  item?.fields["Quantity"] && item?.fields["Quantity"] > 0
+                    ? item?.fields["Quantity"]
+                    : 0,
+                URL: item?.fields["URL"] ? item?.fields["URL"] : null,
+                BeforeTax: item?.fields["BeforeTax"]
+                  ? item?.fields["BeforeTax"]
+                  : 0,
+              },
+            ];
+            finalObjectToPush[item?.fields?.Product_Id]["total_quantity"] =
+              item?.fields["Quantity"] && item?.fields["Quantity"] > 0
+                ? item?.fields["Quantity"]
+                : 0;
+            finalObjectToPush[item?.fields?.Product_Id]["min"] =
+              item?.fields["min"] && item?.fields["min"] !== undefined
+                ? item?.fields["min"]
+                : null;
+            finalObjectToPush[item?.fields?.Product_Id]["max"] =
+              item?.fields["max"] && item?.fields["max"] !== undefined
+                ? item?.fields["max"]
+                : null;
+            finalObjectToPush[item?.fields?.Product_Id]["status"] =
+              item?.fields["status"] && item?.fields["status"] !== undefined
+                ? item?.fields["status"]
+                : null;
+            // finalObjectToPush[item?.fields?.Product_Id]['image']=item?.fields['Images (from Product)']
+          }
+        }
+      });
+    }
+    const objectsToSave = Object.entries(finalObjectToPush).map(
+      ([objectID, objectData]) => {
+        return { objectID, ...objectData };
+      }
+    );
+
+    await index.clearObjects();
+    await index
+      .saveObjects(objectsToSave)
+      .then(({ objectIDs }) => {
+        console.log();
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+    response.send("api called---Fetch Data Sccessfully---");
+  }
+);
+
 exports.clearAndFetchData = functions.https.onRequest(async function (
   request,
   response
@@ -131,7 +242,7 @@ exports.clearAndFetchData = functions.https.onRequest(async function (
   while (obj.isNextPage) {
     const result = await axios.get(obj.link, {
       headers: {
-        Authorization: process.env.AIRTABLE_KEY,
+        Authorization: process.env.WRITE_API_KEY,
       },
     });
     obj.offset = result?.data?.offset;
@@ -184,6 +295,9 @@ exports.clearAndFetchData = functions.https.onRequest(async function (
                   ? item?.fields["Quantity"]
                   : 0,
               URL: item?.fields["URL"] ? item?.fields["URL"] : null,
+              BeforeTax: item?.fields["BeforeTax"]
+                ? item?.fields["BeforeTax"]
+                : null,
             },
           ];
           finalObjectToPush[item?.fields?.Product_Id]["total_quantity"] =
