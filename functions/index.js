@@ -136,7 +136,7 @@ exports.clearAndFetchDataFromAlgolia = functions.https.onRequest(
     while (obj.isNextPage) {
       const result = await axios.get(obj.link, {
         headers: {
-          Authorization: "Bearer keyLqQESyDbpE8JBa",
+          Authorization: process?.env?.AIRTABLE_AUTH_TOKEN,
         },
       });
       obj.offset = result?.data?.offset;
