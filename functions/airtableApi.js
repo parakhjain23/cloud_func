@@ -1,47 +1,49 @@
-const axios = require("axios")
+const axios = require("axios");
 require("dotenv").config();
 const airtableHeader = {
-    headers: {
-      "Authorization": process.env.AIRTABLE_API_KEY,
-    },
-  }
+  headers: {
+    Authorization: "Bearer keyLqQESyDbpE8JBa",
+  },
+};
 const updateOrderStatusApi = async (orderRecordId) => {
-    const response = await axios.patch(
-      `https://api.airtable.com/v0/appttPmFTvYcBaktb/Orders`,
-      {
-        records:[
-            {
-                id:orderRecordId,
-                fields:{
-                    "Financial Status": "paid"
-                }
-            }
-        ]
+  const response = await axios.patch(
+    `https://api.airtable.com/v0/appttPmFTvYcBaktb/Orders`,
+    {
+      records: [
+        {
+          id: orderRecordId,
+          fields: {
+            "Financial Status": "paid",
+          },
+        },
+      ],
     },
     airtableHeader
-    );
-    return response
-  };
+  );
+  return response;
+};
 
-  const markCouponAsUsedApi = async (coupon,userInfo) => {
-    var tempArray = userInfo?.user?.Coupons ? userInfo?.user?.Coupons : [];
-    var newCoupons = [...tempArray, coupon?.id];
-   const response = await axios.patch(`https://api.airtable.com/v0/appttPmFTvYcBaktb/Customers`,{
-        records:[
-            {
-                id: userInfo?.airtableId,
-                fields: {
-                  Coupons: newCoupons,
-                },
-              }
-        ]
+const markCouponAsUsedApi = async (coupon, userInfo) => {
+  var tempArray = userInfo?.user?.Coupons ? userInfo?.user?.Coupons : [];
+  var newCoupons = [...tempArray, coupon?.id];
+  const response = await axios.patch(
+    `https://api.airtable.com/v0/appttPmFTvYcBaktb/Customers`,
+    {
+      records: [
+        {
+          id: userInfo?.airtableId,
+          fields: {
+            Coupons: newCoupons,
+          },
+        },
+      ],
     },
     airtableHeader
-    )
-    await axios.post('https://eook2qc3bg2tggy.m.pipedream.net',response)
-    return response
-  };
-  module.exports={
-    updateOrderStatusApi,
-    markCouponAsUsedApi
-  }
+  );
+  await axios.post("https://eook2qc3bg2tggy.m.pipedream.net", response);
+  return response;
+};
+module.exports = {
+  updateOrderStatusApi,
+  markCouponAsUsedApi,
+};

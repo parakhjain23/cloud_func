@@ -76,7 +76,7 @@ exports.updateOrderStatusToPaid = functions.https.onRequest(async function (
   response
 ) {
   try {
-    const { order, payment, payment_link } = request.body;
+    const { order, payment, payment_link } = request.body.payload;
     await updateOrderStatusApi(order?.entity?.notes?.orderRecordId);
     if (
       order?.entity?.notes?.coupon != null &&
