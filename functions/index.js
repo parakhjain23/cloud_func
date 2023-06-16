@@ -40,10 +40,10 @@ const index = client.initIndex("AirtableProduct");
 
 let obj = {
   sortedLink: `https://api.airtable.com/v0/appttPmFTvYcBaktb/Variants?pageSize=100&${encodeURI(
-    "fields[]=Product&fields[]=MRP&fields[]=Quantity&fields[]=Product copy&fields[]=Variant Label&fields[]=Halfkg_Price&fields[]=Images&fields[]=Total amount&fields[]=Weight&fields[]=Weight Unit&fields[]=Total amount&fields[]=variant count&fields[]=Product_Id&fields[]=Vendor&fields[]=min&fields[]=max&fields[]=status&fields[]=body_html&fields[]=product_type&fields[]=tags&fields=BeforeTax&fields=GST_Rate"
+    "fields[]=Product&fields[]=MRP&fields[]=Quantity&fields[]=Product copy&fields[]=Variant Label&fields[]=Halfkg_Price&fields[]=Images&fields[]=Total amount&fields[]=Weight&fields[]=Weight Unit&fields[]=Total amount&fields[]=variant count&fields[]=Product_Id&fields[]=Vendor&fields[]=min&fields[]=max&fields[]=status&fields[]=body_html&fields[]=product_type&fields[]=tags&fields=BeforeTax&fields=GST_Rate&fields=productcode"
   )}`,
   link: `https://api.airtable.com/v0/appttPmFTvYcBaktb/Variants?pageSize=100&${encodeURI(
-    "fields[]=Product&fields[]=MRP&fields[]=Quantity&fields[]=Product copy&fields[]=Variant Label&fields[]=Halfkg_Price&fields[]=Images&fields[]=Total amount&fields[]=Weight&fields[]=Weight Unit&fields[]=Total amount&fields[]=variant count&fields[]=Product_Id&fields[]=Vendor&fields[]=min&fields[]=max&fields[]=status&fields[]=body_html&fields[]=product_type&fields[]=tags&fields=BeforeTax&fields=GST_Rate"
+    "fields[]=Product&fields[]=MRP&fields[]=Quantity&fields[]=Product copy&fields[]=Variant Label&fields[]=Halfkg_Price&fields[]=Images&fields[]=Total amount&fields[]=Weight&fields[]=Weight Unit&fields[]=Total amount&fields[]=variant count&fields[]=Product_Id&fields[]=Vendor&fields[]=min&fields[]=max&fields[]=status&fields[]=body_html&fields[]=product_type&fields[]=tags&fields=BeforeTax&fields=GST_Rate&fields=productcode"
   )}`,
   pageSize: 100,
   offset: null,
@@ -156,6 +156,13 @@ exports.clearAndFetchDataFromAlgolia = functions.https.onRequest(
                   ? item?.fields["Quantity"]
                   : 0,
               URL: item?.fields["URL"] ? item?.fields["URL"] : null,
+              BeforeTax: item?.fields["BeforeTax"]
+                ? item?.fields["BeforeTax"]
+                : 0,
+              GST_Rate: item?.fields["GST_Rate"] ? item?.fields["GST_Rate"] : 0,
+              productcode: item?.fields["productcode"]
+                ? item?.fields["productcode"]
+                : "",
             });
           } else {
             finalObjectToPush[item?.fields?.Product_Id] = {};
@@ -196,6 +203,9 @@ exports.clearAndFetchDataFromAlgolia = functions.https.onRequest(
                 GST_Rate: item?.fields["GST_Rate"]
                   ? item?.fields["GST_Rate"]
                   : 0,
+                productcode: item?.fields["productcode"]
+                  ? item?.fields["productcode"]
+                  : "",
               },
             ];
             finalObjectToPush[item?.fields?.Product_Id]["total_quantity"] =
