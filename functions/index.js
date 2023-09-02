@@ -40,10 +40,10 @@ const index = client.initIndex("AirtableProduct");
 
 let obj = {
   sortedLink: `https://api.airtable.com/v0/appttPmFTvYcBaktb/Variants?pageSize=100&${encodeURI(
-    "fields[]=Product&fields[]=MRP&fields[]=Quantity&fields[]=Product copy&fields[]=Variant Label&fields[]=Halfkg_Price&fields[]=Images&fields[]=Total amount&fields[]=Weight&fields[]=Weight Unit&fields[]=Total amount&fields[]=variant count&fields[]=Product_Id&fields[]=Vendor&fields[]=min&fields[]=max&fields[]=status&fields[]=body_html&fields[]=product_type&fields[]=tags&fields=BeforeTax&fields=GST_Rate&fields=productcode"
+    "fields[]=Product&fields[]=MRP&fields[]=Quantity&fields[]=Product copy&fields[]=Variant Label&fields[]=Halfkg_Discounted_Price&fields[]=Images&fields[]=Total amount&fields[]=Weight&fields[]=Weight Unit&fields[]=Total amount&fields[]=variant count&fields[]=Product_Id&fields[]=Vendor&fields[]=min&fields[]=max&fields[]=status&fields[]=body_html&fields[]=product_type&fields[]=tags&fields=BeforeTax&fields=GST_Rate"
   )}`,
   link: `https://api.airtable.com/v0/appttPmFTvYcBaktb/Variants?pageSize=100&${encodeURI(
-    "fields[]=Product&fields[]=MRP&fields[]=Quantity&fields[]=Product copy&fields[]=Variant Label&fields[]=Halfkg_Price&fields[]=Images&fields[]=Total amount&fields[]=Weight&fields[]=Weight Unit&fields[]=Total amount&fields[]=variant count&fields[]=Product_Id&fields[]=Vendor&fields[]=min&fields[]=max&fields[]=status&fields[]=body_html&fields[]=product_type&fields[]=tags&fields=BeforeTax&fields=GST_Rate&fields=productcode"
+    "fields[]=Product&fields[]=MRP&fields[]=Quantity&fields[]=Product copy&fields[]=Variant Label&fields[]=Halfkg_Discounted_Price&fields[]=Images&fields[]=Total amount&fields[]=Weight&fields[]=Weight Unit&fields[]=Total amount&fields[]=variant count&fields[]=Product_Id&fields[]=Vendor&fields[]=min&fields[]=max&fields[]=status&fields[]=body_html&fields[]=product_type&fields[]=tags&fields=BeforeTax&fields=GST_Rate"
   )}`,
   pageSize: 100,
   offset: null,
@@ -76,7 +76,7 @@ exports.updateOrderStatusToPaid = functions.https.onRequest(async function (
   response
 ) {
   try {
-    const { order, payment, payment_link } = request.body;
+    const { order, payment, payment_link } = request.body.payload;
     await updateOrderStatusApi(order?.entity?.notes?.orderRecordId);
     if (
       order?.entity?.notes?.coupon != null &&
@@ -142,7 +142,7 @@ exports.clearAndFetchDataFromAlgolia = functions.https.onRequest(
       obj.offset = result?.data?.offset;
       if (obj.offset == undefined) {
         obj.isNextPage = false;
-        break;
+        // break;
       }
       obj.link = `${obj.sortedLink}&offset=${obj.offset}`;
       result?.data?.records?.map((item) => {
@@ -172,7 +172,7 @@ exports.clearAndFetchDataFromAlgolia = functions.https.onRequest(
               item?.fields["Product copy"];
             finalObjectToPush[item?.fields?.Product_Id]["body_html"] =
               item?.fields["body_html"] &&
-              item?.fields["body_html"] !== undefined
+                item?.fields["body_html"] !== undefined
                 ? item?.fields["body_html"]
                 : null;
             finalObjectToPush[item?.fields?.Product_Id]["vendor"] =
@@ -181,7 +181,7 @@ exports.clearAndFetchDataFromAlgolia = functions.https.onRequest(
                 : null;
             finalObjectToPush[item?.fields?.Product_Id]["product_type"] =
               item?.fields["product_type"] &&
-              item?.fields["product_type"] !== undefined
+                item?.fields["product_type"] !== undefined
                 ? item?.fields["product_type"]
                 : null;
             finalObjectToPush[item?.fields?.Product_Id]["tags"] =
